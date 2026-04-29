@@ -123,14 +123,7 @@ jobs:
           7z a -mx=1 -v95m "${ARCHIVE_BASE}.7z" "$FINAL_NAME"
           
           echo "✅ آرشیو ساخته شد:"
-          ls -lh "${ARCHIVE_BASE}.7z."* "${ARCHIVE_BASE}.7z" 2>/dev/null || true
-          
-          # شمارش تعداد تکه‌ها
-          CHUNK_COUNT=$(ls "${ARCHIVE_BASE}.7z."* 2>/dev/null | wc -l)
-          if [[ $CHUNK_COUNT -eq 0 ]]; then
-            CHUNK_COUNT=1
-          fi
-          echo "📊 تعداد تکه‌ها: $CHUNK_COUNT"
+          ls -lh "${ARCHIVE_BASE}.7z"* 2>/dev/null || echo "هیچ فایلی ساخته نشد"
 
       - name: 🗑️ حذف فایل اصلی
         run: |
@@ -146,8 +139,14 @@ jobs:
         run: |
           ARCHIVE_BASE="${{ steps.naming.outputs.archive_base }}"
           
-          # اضافه کردن همه تکه‌ها
-          git add "${ARCHIVE_BASE}.7z."* "${ARCHIVE_BASE}.7z" 2>/dev/null || true
+          echo "📋 فایل‌های موجود برای آپلود:"
+          ls -la "${ARCHIVE_BASE}.7z"* 2>/dev/null || echo "هیچ فایلی پیدا نشد"
+          
+          # اضافه کردن فایل‌ها با find برای اطمینان
+          find . -maxdepth 1 -name "${ARCHIVE_BASE}.7z*" -type f -exec git add {} \; 2>/dev/null || true
+          
+          echo "📊 وضعیت فایل‌های stage شده:"
+          git status
           
           if ! git diff --staged --quiet; then
             git commit -m "📦 Raven: ${ARCHIVE_BASE}"
@@ -159,7 +158,9 @@ jobs:
               exit 1
             fi
           else
-            echo "⚠️ فایلی برای آپلود وجود ندارد."
+            echo "⚠️ هیچ فایلی stage نشده است!"
+            echo "📁 محتویات کامل پوشه:"
+            ls -la
             exit 1
           fi
 
@@ -170,13 +171,6 @@ jobs:
           echo "=============================================="
           echo "🎉 عملیات با موفقیت انجام شد!"
           echo ""
-          echo "📁 تکه‌های آرشیو در مخزن شما ذخیره شدند."
-          echo "🔍 فایل‌ها با پیشوند: ${ARCHIVE_BASE}.7z"
-          echo ""
-          echo "📥 حالا می‌توانید از صفحه اصلی مخزن،"
-          echo "   فایل‌ها را دانلود کنید."
-          echo ""
-          echo "💡 برای استخراج:"
-          echo "   همه تکه‌ها را در یک پوشه بریزید"
-          echo "   و با 7-Zip استخراج کنید"
+          echo "📁 فایل‌های آرشیو در مخزن شما ذخیره شدند."
+          echo "📥 حالا می‌توانید از صفحه اصلی مخزن دانلود کنید."
           echo "=============================================="
